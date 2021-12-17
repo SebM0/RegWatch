@@ -9,9 +9,8 @@ using System.Threading.Tasks;
 
 namespace RegUpdater
 {
-    class KeepProcess : IDisposable
+    class KeepProcess : RecurrentTool
     {
-        CancellationTokenSource cancel;
         int focus = 0;
         private List<string> processes;
 
@@ -38,24 +37,9 @@ namespace RegUpdater
                 processes.Add("explorer"); // to cycle focus loss
             }
         }
-        internal void Start()
-        {
-            focus = 0;
-            cancel = new CancellationTokenSource();
-            RT(AwakeProcesses, 30, cancel.Token);
-        }
-        internal void Stop()
-        {
-            if (cancel == null)
-                return;
-            cancel.Cancel();
-            cancel.Dispose();
-            cancel = null;
-        }
-
         private void OnConfigurationChanged(ConfigurationHandler configurationHandler)
         {
-            bool active = (cancel == null);
+            bool active = IsActive();
             if (active)
                 Stop();
             Init(configurationHandler);
@@ -78,7 +62,7 @@ namespace RegUpdater
             return query.First();
         }
 
-        private void AwakeProcesses()
+        protected override void Run()
         {
             if (processes.Count == 0)
                 return;
@@ -99,23 +83,6 @@ namespace RegUpdater
                                 }
                             }
                         }*/
-        }
-
-        public void Dispose()
-        {
-            Stop();
-        }
-
-        static void RT(Action action, int seconds, CancellationToken token)
-        {
-            if (action == null)
-                return; Task.Run(async () => {
-                    while (!token.IsCancellationRequested)
-                    {
-                        action();
-                        await Task.Delay(TimeSpan.FromSeconds(seconds), token);
-                    }
-                }, token);
         }
 
         public static ICollection<string> ListFocusableProcesses()

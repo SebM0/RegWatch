@@ -29,6 +29,7 @@ namespace RegUpdater
         private RegWatcher regWatcher;
         private KeepAlive keepAlive;
         private KeepProcess keepProcess;
+        private NewsChecker newsChecker;
         private int changes = 0;
         private String lastChangeTime = "";
 
@@ -55,6 +56,7 @@ namespace RegUpdater
                     new MenuItem("Apply registry now", Apply),
                     new MenuItem("Keep alive", KeepAlive),
                     awakeMenu,
+                    new MenuItem("Check News", CheckNews),
                     new MenuItem("Exit", Exit)
                 }),
                 Visible = true,
@@ -69,6 +71,8 @@ namespace RegUpdater
             regWatcher.Start();
             keepAlive = new KeepAlive();
             keepProcess = new KeepProcess(configurationHandler);
+            newsChecker = new NewsChecker();
+            newsChecker.ChangeDetected += OnNews;
         }
 
         void Exit(object sender, EventArgs e)
@@ -138,6 +142,29 @@ namespace RegUpdater
             lastChangeTime = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
             String text = $"Changes: {changes}\r\nLast change: {lastChangeTime}";
             trayIcon.Text = $"Registry watcher\r\n{text}";
+            trayIcon.ShowBalloonTip(5_000, "Registry Watcher", text, ToolTipIcon.Info);
+        }
+
+        void CheckNews(object sender, EventArgs e)
+        {
+            MenuItem menuItem = (MenuItem)sender;
+            if (menuItem.Checked)
+            {
+                newsChecker.Stop();
+            }
+            else
+            {
+                newsChecker.Start();
+            }
+            menuItem.Checked = !menuItem.Checked;
+        }
+
+        void OnNews()
+        {
+            String newsTime = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+            String text = $"News updated at: {newsTime}";
+            trayIcon.Text = $"Registry watcher\r\n{text}";
+            text += $"\r\n{newsChecker.visited}";
             trayIcon.ShowBalloonTip(5_000, "Registry Watcher", text, ToolTipIcon.Info);
         }
     }
